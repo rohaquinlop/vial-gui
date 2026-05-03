@@ -1,4 +1,8 @@
+FROM ghcr.io/astral-sh/uv:latest AS uv
+
 FROM ubuntu:18.04
+
+COPY --from=uv /uv /uvx /usr/local/bin/
 
 RUN apt-get update && apt-get -y upgrade
 RUN apt-get install -y libusb-1.0-0-dev libudev-dev ruby ruby-dev rubygems build-essential desktop-file-utils wget unzip zlib1g-dev liblzma-dev libssl-dev git imagemagick file libfuse2
@@ -10,5 +14,3 @@ RUN wget https://github.com/AppImage/pkg2appimage/archive/38603d92359a48189c35de
     fpm --version
 
 COPY . /vial-gui
-
-RUN /vial-gui/util/setup_python36.sh

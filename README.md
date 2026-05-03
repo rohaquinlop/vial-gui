@@ -19,7 +19,28 @@ Visit https://get.vial.today/ to download a binary release of Vial.
 
 #### Development
 
-Python 3.6 is recommended (3.6 is the latest version that is officially supported by `fbs`).
+The project can be developed with Python 3.10 using [uv](https://docs.astral.sh/uv/).
+
+Install dependencies with uv:
+
+```
+uv sync
+```
+
+To launch the application afterwards:
+
+```
+uv run fbs run
+```
+
+To run tests:
+
+```
+uv run pytest
+```
+
+If you prefer the legacy setup, Python 3.6 with `venv` and `pip` is still supported
+(3.6 is the latest version officially supported by `fbs`).
 
 Install dependencies:
 

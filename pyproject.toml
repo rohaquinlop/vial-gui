@@ -1,0 +1,34 @@
+[project]
+name = "vial-gui"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "certifi>=2026.4.22",
+    "cython>=3.2.4",
+    "fbs",
+    "hidapi",
+    "keyboard>=0.13.5",
+    "macholib>=1.16.4",
+    "pefile>=2024.8.26",
+    "pyinstaller>=6.20.0",
+    "pyqt5>=5.15.11",
+    "pywin32>=311 ; sys_platform == 'win32'",
+    "simpleeval>=1.0.7",
+]
+
+[tool.uv.sources]
+fbs = { git = "https://github.com/rnbwdsh/fbs" }
+hidapi = { git = "https://github.com/rohaquinlop/cython-hidapi", rev = "06843472ec2d191e73fdab28139f282c3e99ac75" }
+
+[build-system]
+requires = ["setuptools", "cython"]
+build_backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-qt>=4.5.0",
+    "pytest-xvfb>=3.1.1",
+]
