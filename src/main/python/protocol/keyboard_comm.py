@@ -403,6 +403,7 @@ class Keyboard(ProtocolMacro, ProtocolDynamic, ProtocolTapDance, ProtocolCombo, 
         data["key_override"] = self.save_key_override()
         data["alt_repeat_key"] = self.save_alt_repeat_key()
         data["settings"] = self.settings
+        data["rgb"] = self.save_lighting()
 
         return json.dumps(data).encode("utf-8")
 
@@ -438,6 +439,80 @@ class Keyboard(ProtocolMacro, ProtocolDynamic, ProtocolTapDance, ProtocolCombo, 
             qsid = int(qsid)
             if QmkSettings.is_qsid_supported(qsid):
                 self.qmk_settings_set(qsid, value)
+
+        self.restore_lighting(data.get("rgb", dict()))
+
+    def save_lighting(self):
+        """ Serializes the current lighting/RGB configuration.
+
+        Only the fields for the lighting type(s) this keyboard supports are
+        included, so that restoring onto a board with different lighting is a
+        no-op for the unsupported parts.
+        """
+
+        data = dict()
+        if self.lighting_qmk_rgblight:
+            data["underglow_effect"] = self.underglow_effect
+            data["underglow_effect_speed"] = self.underglow_effect_speed
+            data["underglow_brightness"] = self.underglow_brightness
+            data["underglow_color"] = list(self.underglow_color)
+        if self.lighting_qmk_backlight:
+            data["backlight_brightness"] = self.backlight_brightness
+            data["backlight_effect"] = self.backlight_effect
+        if self.lighting_vialrgb:
+            data["rgb_mode"] = self.rgb_mode
+            data["rgb_speed"] = self.rgb_speed
+            data["rgb_hsv"] = list(self.rgb_hsv)
+        return data
+
+    def restore_lighting(self, data):
+        """ Restores a saved lighting/RGB configuration to the keyboard.
+
+        Each block is guarded by the lighting type the connected keyboard
+        actually supports, and only keys present in the saved data are applied,
+        so older .vil files (which carry no "rgb" section) are handled too.
+        """
+
+        if not data:
+            return
+
+        restored = False
+
+        if self.lighting_qmk_rgblight:
+            if "underglow_effect" in data:
+                self.set_qmk_rgblight_effect(data["underglow_effect"])
+                restored = True
+            if "underglow_effect_speed" in data:
+                self.set_qmk_rgblight_effect_speed(data["underglow_effect_speed"])
+                restored = True
+            if "underglow_color" in data:
+                h, s = data["underglow_color"]
+                v = data.get("underglow_brightness", self.underglow_brightness)
+                self.set_qmk_rgblight_color(h, s, v)
+                restored = True
+            elif "underglow_brightness" in data:
+                self.set_qmk_rgblight_brightness(data["underglow_brightness"])
+                restored = True
+
+        if self.lighting_qmk_backlight:
+            if "backlight_brightness" in data:
+                self.set_qmk_backlight_brightness(data["backlight_brightness"])
+                restored = True
+            if "backlight_effect" in data:
+                self.set_qmk_backlight_effect(data["backlight_effect"])
+                restored = True
+
+        if self.lighting_vialrgb and any(k in data for k in ("rgb_mode", "rgb_speed", "rgb_hsv")):
+            self.rgb_mode = data.get("rgb_mode", self.rgb_mode)
+            self.rgb_speed = data.get("rgb_speed", self.rgb_speed)
+            self.rgb_hsv = tuple(data.get("rgb_hsv", self.rgb_hsv))
+            self._vialrgb_set_mode()
+            restored = True
+
+        # Persist the applied lighting to the keyboard's EEPROM, mirroring the
+        # "Save" button in the lighting tab, so the loaded config survives a reboot.
+        if restored:
+            self.save_rgb()
 
     def reset(self):
         self.usb_send(self.dev, struct.pack("B", 0xB))
