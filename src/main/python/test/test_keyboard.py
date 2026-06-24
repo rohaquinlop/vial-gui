@@ -1,9 +1,11 @@
 import unittest
+import json
 import lzma
 import struct
 
 from keycodes.keycodes import Keycode
 from protocol.keyboard_comm import Keyboard
+from protocol.constants import CMD_VIA_LIGHTING_SET_VALUE, VIALRGB_SET_MODE, CMD_VIA_LIGHTING_SAVE
 from util import chunks, MSG_LEN
 
 LAYOUT_2x2 = """
@@ -169,6 +171,52 @@ class TestKeyboard(unittest.TestCase):
         dev.expect("05010100000A", "")
         kb.restore_layout(data)
         self.assertEqual(kb.layout[(1, 1, 0)], Keycode.serialize(10))
+        dev.finish()
+
+    def test_lighting_save_restore(self):
+        """ Tests that VialRGB lighting configuration is saved and restored """
+
+        kb, dev = self.prepare_keyboard(LAYOUT_2x2, [[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
+        # the test layout reports lighting "none"; emulate a VialRGB board
+        kb.lighting_vialrgb = True
+        kb.rgb_maximum_brightness = 255
+        kb.rgb_mode = 2
+        kb.rgb_speed = 90
+        kb.rgb_hsv = (16, 32, 64)
+        data = kb.save_layout()
+        dev.finish()
+
+        saved = json.loads(data.decode("utf-8"))
+        self.assertEqual(saved["rgb"]["rgb_mode"], 2)
+        self.assertEqual(saved["rgb"]["rgb_speed"], 90)
+        self.assertEqual(saved["rgb"]["rgb_hsv"], [16, 32, 64])
+
+        # restoring onto another VialRGB board should push the mode and persist it
+        kb, dev = self.prepare_keyboard(LAYOUT_2x2, [[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
+        kb.lighting_vialrgb = True
+        kb.rgb_mode = 0
+        kb.rgb_speed = 0
+        kb.rgb_hsv = (0, 0, 0)
+        dev.expect(struct.pack("BBHBBBB", CMD_VIA_LIGHTING_SET_VALUE, VIALRGB_SET_MODE, 2, 90, 16, 32, 64), "")
+        dev.expect(struct.pack(">B", CMD_VIA_LIGHTING_SAVE), "")
+        kb.restore_layout(data)
+        self.assertEqual(kb.rgb_mode, 2)
+        self.assertEqual(kb.rgb_speed, 90)
+        self.assertEqual(kb.rgb_hsv, (16, 32, 64))
+        dev.finish()
+
+    def test_lighting_save_restore_none(self):
+        """ Boards without lighting must round-trip with an empty rgb section """
+
+        kb, dev = self.prepare_keyboard(LAYOUT_2x2, [[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
+        data = kb.save_layout()
+        dev.finish()
+
+        self.assertEqual(json.loads(data.decode("utf-8"))["rgb"], {})
+
+        # restore must not emit any lighting traffic for a non-lighting board
+        kb, dev = self.prepare_keyboard(LAYOUT_2x2, [[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
+        kb.restore_layout(data)
         dev.finish()
 
     def test_encoder_simple(self):
