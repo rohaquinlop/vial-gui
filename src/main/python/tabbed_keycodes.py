@@ -34,7 +34,7 @@ class AlternativeDisplay(QWidget):
                 btn = SquareButton()
                 btn.setRelSize(KEYCODE_BTN_RATIO)
                 btn.setText(title)
-                btn.clicked.connect(lambda st, k=code: self.keycode_changed.emit(title))
+                btn.clicked.connect(lambda st, k=code: self.keycode_changed.emit(k))
                 self.key_layout.addWidget(btn)
 
         layout = QVBoxLayout()
@@ -165,14 +165,14 @@ class FilteredTabbedKeycodes(QTabWidget):
                 (ansi_80, KEYCODES_SPECIAL + KEYCODES_BASIC_NUMPAD + KEYCODES_SHIFTED),
                 (ansi_70, KEYCODES_SPECIAL + KEYCODES_BASIC_NUMPAD + KEYCODES_BASIC_NAV + KEYCODES_SHIFTED),
                 (None, KEYCODES_SPECIAL + KEYCODES_BASIC + KEYCODES_SHIFTED),
-            ], prefix_buttons=[("Any", -1)]),
+            ], prefix_buttons=[("Any", "Any"), ("Super\nSpace", "MT(MOD_HYPR, KC_SPC)")]),
             Tab(self, "ISO/JIS", [
                 (iso_100, KEYCODES_SPECIAL + KEYCODES_SHIFTED + KEYCODES_ISO_KR),
                 (iso_80, KEYCODES_SPECIAL + KEYCODES_BASIC_NUMPAD + KEYCODES_SHIFTED + KEYCODES_ISO_KR),
                 (iso_70, KEYCODES_SPECIAL + KEYCODES_BASIC_NUMPAD + KEYCODES_BASIC_NAV + KEYCODES_SHIFTED +
                  KEYCODES_ISO_KR),
                 (None, KEYCODES_ISO),
-            ], prefix_buttons=[("Any", -1)]),
+            ], prefix_buttons=[("Any", "Any"), ("Super\nSpace", "MT(MOD_HYPR, KC_SPC)")]),
             SimpleTab(self, "Layers", KEYCODES_LAYERS),
             Tab(self, "Quantum", [(mods, (KEYCODES_BOOT + KEYCODES_QUANTUM)),
                                   (mods_narrow, (KEYCODES_BOOT + KEYCODES_QUANTUM)),
